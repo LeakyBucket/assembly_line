@@ -26,7 +26,7 @@ defmodule Dag.JobQueue.ServerTest do
   end
 
   test "completing a single task" do
-    Server.complete_task :test, :a
+    Server.complete_job :test, :a
     expected = MapSet.new([:a])
 
     assert ^expected = Server.get_completed :test
