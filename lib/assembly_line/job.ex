@@ -1,4 +1,4 @@
-defmodule Dag.Job do
+defmodule AssemblyLine.Job do
   defstruct task: nil, args: [], state: :pending
 
   def build([task | args]) do

@@ -1,13 +1,13 @@
-defmodule Dag.JobQueue.Handler do
+defmodule AssemblyLine.JobQueue.Handler do
   @moduledoc """
   Responsible for passing jobs from the queue to whatever the backend
   responsible for processing them.
   """
 
-  alias Dag.JobQueue.Server
+  alias AssemblyLine.JobQueue.Server
 
-  @executor Application.get_env(:dag, :job_executor)
-  @check_interval Application.get_env(:dag, :check_interval) || 1000
+  @executor Application.get_env(:assembly_line, :job_executor)
+  @check_interval Application.get_env(:assembly_line, :check_interval) || 1000
 
   @doc """
   Starts job processing for the `name` Queue
@@ -21,7 +21,12 @@ defmodule Dag.JobQueue.Handler do
     jobs
     |> run_set
     |> case do
-
+      {:finished, jobs} ->
+        Server.complete_current
+        process name, Server.next_for(name)
+      {:incomplete, results} ->
+        Enum.each(results[:done], fn job -> Server.complete_job(job) end)
+        :incomplete
     end
   end
 
@@ -34,7 +39,8 @@ defmodule Dag.JobQueue.Handler do
     await_tasks [tasks, []]
   end
 
-  defp await_tasks([[] | finished]), do: {:finished, finished}
+  defp await_tasks([[] | %{failed: [], done: done}]), do: {:finished, done}
+  defp await_tasks([[] | %{failed: failed, done: done}]), do: {:incomplete, [failed: failed, done: done]}
   defp await_tasks([outstanding | finished]) do
     [running | newly_finished] = outstanding
     |> Task.yield_many(@check_interval)

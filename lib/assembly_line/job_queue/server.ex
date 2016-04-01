@@ -1,4 +1,4 @@
-defmodule Dag.JobQueue.Server do
+defmodule AssemblyLine.JobQueue.Server do
   @moduledoc """
   Manages job queues
 
@@ -15,7 +15,7 @@ defmodule Dag.JobQueue.Server do
   Returns {:ok, pid}
 
   A new job queue should be initialized will all required work upfront.  The
-  work should be in the form of a list of `Dag.Job` structs.  Each nesting in
+  work should be in the form of a list of `AssemblyLine.Job` structs.  Each nesting in
   the list can be run in parallel but must finish before the next entry can
   start.
 
@@ -25,7 +25,7 @@ defmodule Dag.JobQueue.Server do
     required before the third can be run.  We would need the following work list:
 
     ```
-      [[%Dag.Job{}, %Dag.Job{}], %Dag.Job{}]
+      [[%AssemblyLine.Job{}, %AssemblyLine.Job{}], %AssemblyLine.Job{}]
     ```
   """
   def start_link(name, work) do
@@ -35,7 +35,7 @@ defmodule Dag.JobQueue.Server do
   @doc """
   Fetches the next job set for the named queue
 
-  Returns a list of `Dag.Job` structs
+  Returns a list of `AssemblyLine.Job` structs
 
   next_for will return the first element currently in the work list, note that
   it does not modify the list at all.  You must explicitly indicate that a job
@@ -51,7 +51,7 @@ defmodule Dag.JobQueue.Server do
   @doc """
   Fetches the set of completed jobs
 
-  Returns a `MapSet` of `Dag.Job` structs
+  Returns a `MapSet` of `AssemblyLine.Job` structs
 
   get_completed will return all the jobs that have been marked as complete.  This
   is useful when a finished job could have a negative impact if repeated.

@@ -1,0 +1,2 @@
+defmodule AssemblyLine do
+end

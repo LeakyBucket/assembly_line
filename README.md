@@ -1,4 +1,4 @@
-# Dag
+# AssemblyLine
 
 **TODO: Add description**
 
@@ -6,15 +6,15 @@
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
 
-  1. Add dag to your list of dependencies in `mix.exs`:
+  1. Add assembly_line to your list of dependencies in `mix.exs`:
 
         def deps do
-          [{:dag, "~> 0.0.1"}]
+          [{:assembly_line, "~> 0.0.1"}]
         end
 
-  2. Ensure dag is started before your application:
+  2. Ensure assembly_line is started before your application:
 
         def application do
-          [applications: [:dag]]
+          [applications: [:assembly_line]]
         end
 

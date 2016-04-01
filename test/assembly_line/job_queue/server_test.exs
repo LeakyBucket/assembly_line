@@ -1,7 +1,7 @@
-defmodule Dag.JobQueue.ServerTest do
+defmodule AssemblyLine.JobQueue.ServerTest do
   use ExUnit.Case
 
-  alias Dag.JobQueue.Server
+  alias AssemblyLine.JobQueue.Server
 
   @name :test
 

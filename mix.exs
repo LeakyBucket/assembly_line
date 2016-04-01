@@ -1,8 +1,8 @@
-defmodule Dag.Mixfile do
+defmodule AssemblyLine.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :dag,
+    [app: :assembly_line,
      version: "0.0.1",
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
