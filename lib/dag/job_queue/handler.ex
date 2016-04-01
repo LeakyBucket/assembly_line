@@ -4,17 +4,28 @@ defmodule Dag.JobQueue.Handler do
   responsible for processing them.
   """
 
+  alias Dag.JobQueue.Server
+
   @executor Application.get_env(:dag, :job_executor)
   @check_interval Application.get_env(:dag, :check_interval) || 1000
 
   @doc """
-  Processes the job queue specified by `name`
+  Starts job processing for the `name` Queue
   """
-  def process(name) do
-
+  def start_processing(name) do
+    process name, Server.next_for(name)
   end
 
-  defp run_set([]), do: :finished
+  defp process(name, []), do: :finished
+  defp process(name, jobs) do
+    jobs
+    |> run_set
+    |> case do
+
+    end
+  end
+
+  # Need to tie the task to the job for tracking purposes
   defp run_set(jobs) do
     tasks = Enum.map(jobs, fn job ->
       Task.async @executor, :perform, [job]
@@ -23,7 +34,7 @@ defmodule Dag.JobQueue.Handler do
     await_tasks [tasks, []]
   end
 
-  defp await_tasks([[] | finished]), do: finished
+  defp await_tasks([[] | finished]), do: {:finished, finished}
   defp await_tasks([outstanding | finished]) do
     [running | newly_finished] = outstanding
     |> Task.yield_many(@check_interval)
