@@ -3,7 +3,7 @@ defmodule AssemblyLine.JobQueue.ServerTest do
 
   alias AssemblyLine.JobQueue.Server
 
-  @name :test
+  @name :server_test
 
   setup do
     {:ok, agent} = Server.start_link(@name, [[:a, :b], :c])
@@ -15,14 +15,14 @@ defmodule AssemblyLine.JobQueue.ServerTest do
   end
 
   test "completing the current task set" do
-    Server.complete_current_set :test
+    Server.complete_current_set @name
     expected = MapSet.new([:a, :b])
 
-    assert ^expected = Server.get_completed :test
+    assert ^expected = Server.get_completed @name
   end
 
   test "getting completed tasks" do
-    assert %MapSet{} = Server.get_completed :test
+    assert %MapSet{} = Server.get_completed @name
   end
 
   test "completing a single task" do
@@ -31,4 +31,6 @@ defmodule AssemblyLine.JobQueue.ServerTest do
 
     assert ^expected = Server.get_completed @name
   end
+
+  #TODO: Need to test behavior when completing only job in a single job `set`
 end
