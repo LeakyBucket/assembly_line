@@ -44,7 +44,7 @@ defmodule AssemblyLine.JobQueue.Server do
   """
   def next_for(name) do
     Agent.get(name, fn %__MODULE__{work: [next | _rest]} ->
-      next
+      List.wrap next
     end)
   end
 
