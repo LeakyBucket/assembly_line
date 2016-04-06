@@ -115,8 +115,10 @@ defmodule AssemblyLine.JobQueue.Server do
   This is a callback function for the `Agent` to use when adding tasks to the
   `finished` set outside the scope of the `complete_current_set/1` function.
   """
-  def add_to_finished(%__MODULE__{work: work, finished: finished}, tasks) do
-    %__MODULE__{work: work, finished: MapSet.union(finished, to_set(tasks))}
+  def finish_job(%__MODULE__{work: [current_set | rest], finished: finished}, task) do
+    new_current = List.delete(current_set, task)
+
+    %__MODULE__{work: [new_current | rest], finished: MapSet.union(finished, to_set(task))}
   end
 
   @doc """
