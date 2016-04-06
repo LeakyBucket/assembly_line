@@ -10,55 +10,80 @@ defmodule AssemblyLine.JobQueue.Handler do
   @check_interval Application.get_env(:assembly_line, :check_interval) || 1000
 
   @doc """
-  Starts job processing for the `name` Queue
+  Starts job processing for the `queue`.
+
+  Returns `:finished` or `:incomplete`.
   """
-  def start_processing(name) do
-    process name, Server.next_for(name)
+  def start_all(queue) do
+    queue
+    |> process(Server.next_for queue)
   end
 
-  defp process(name, []), do: :finished
-  defp process(name, jobs) do
-    jobs
-    |> run_set
+  @doc """
+  Processes the specified `queue`
+
+  Returns `:finished` if the entire pipeline completes successfuly.  Otherwise
+  it returns `{:incomplete, [%AssemblyLine.Job{}]}` where the second part of
+  the tuple is a list of `AssemblyLine.JobQueue.Job` structs which failed to
+  process.
+  """
+  def process(_queue, []), do: :finished
+  def process(queue, _jobs) do
+    queue
+    |> process_set(Server.next_for(queue))
     |> case do
-      {:finished, jobs} ->
-        Server.complete_current
-        process name, Server.next_for(name)
-      {:incomplete, results} ->
-        Enum.each(results[:done], fn job -> Server.complete_job(job) end)
-        :incomplete
+      {:incomplete, []} ->
+        process(queue, Server.next_for(queue))
+      {:incomplete, failed} ->
+        {:incomplete, failed}
     end
   end
 
-  # Need to tie the task to the job for tracking purposes
-  defp run_set(jobs) do
-    tasks = Enum.map(jobs, fn job ->
-      Task.async @executor, :perform, [job]
-    end)
+  @doc """
+  Processes a set of jobs asynchronously and monitors their status.
 
-    await_tasks [tasks, []]
+  Returns `{:incomplete, [] | [%AssemblyLine.Job{}]}` where the second tuple
+  element is a list of jobs that failed.
+  """
+  def process_set(queue, jobs) do
+    jobs
+    |> start_jobs
+    |> monitor(queue)
   end
 
-  defp await_tasks([[] | %{failed: [], done: done}]), do: {:finished, done}
-  defp await_tasks([[] | %{failed: failed, done: done}]), do: {:incomplete, [failed: failed, done: done]}
-  defp await_tasks([outstanding | finished]) do
-    [running | newly_finished] = outstanding
+  defp start_jobs(jobs) do
+    Enum.reduce(jobs, %{}, fn job, acc ->
+      Map.put acc, Task.async(@executor, :perform, [job]), job
+    end)
+  end
+
+  defp monitor(task_map, queue) when map_size(task_map) == 0, do: {:incomplete, Server.next_for(queue)}
+  defp monitor(task_map, queue) do
+    task_map
+    |> Map.keys
     |> Task.yield_many(@check_interval)
-    |> filter_by_status
-
-    await_tasks [running, newly_finished ++ finished]
+    |> process_results(task_map, queue)
+    |> monitor(queue)
   end
 
-  def filter_by_status(yield_results) do
-    Enum.reduce(yield_results, [[], []], fn [outstanding, finished], status ->
-      case status do
-        {_task, {:ok, response}} ->
-          [outstanding, [{:ok, response}] ++ finished]
-        {_task, {:error, reason}} ->
-          [outstanding, [{:error, reason}] ++ finished]
-        {task, nil} ->
-          [[task] ++ outstanding, finished]
-      end
+  defp process_results(task_list, task_map, queue) do
+    task_list
+    |> Enum.reduce(task_map, fn task, map ->
+      update_task_map(task, map, queue)
     end)
+  end
+
+  defp update_task_map(nil, task_map, _queue), do: task_map
+  defp update_task_map({t, {:ok, _response}}, task_map, queue) do
+    task_map
+    |> Map.get(t)
+    |> Server.complete_job(queue)
+
+    task_map
+    |> Map.delete(t)
+  end
+  defp update_task_map({t, {:exit, _reason}}, task_map, _queue) do
+    task_map
+    |> Map.delete(t)
   end
 end
