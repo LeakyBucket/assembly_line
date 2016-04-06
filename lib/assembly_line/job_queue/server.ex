@@ -94,8 +94,8 @@ defmodule AssemblyLine.JobQueue.Server do
   comparison between the current job set and finished during a retry to avoid
   re-running a potentially slow or dangerous job.
   """
-  def complete_job(name, task) do
-    Agent.update(name, __MODULE__, :add_to_finished, [task])
+  def complete_job(job, name) do
+    Agent.update(name, __MODULE__, :finish_job, [job])
   end
 
   @doc """

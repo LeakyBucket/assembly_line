@@ -26,9 +26,9 @@ defmodule AssemblyLine.JobQueue.ServerTest do
   end
 
   test "completing a single task" do
-    Server.complete_job :test, :a
+    Server.complete_job :a, @name
     expected = MapSet.new([:a])
 
-    assert ^expected = Server.get_completed :test
+    assert ^expected = Server.get_completed @name
   end
 end
