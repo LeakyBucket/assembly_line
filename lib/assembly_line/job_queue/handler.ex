@@ -5,6 +5,7 @@ defmodule AssemblyLine.JobQueue.Handler do
   """
 
   alias AssemblyLine.JobQueue.Server
+  alias AssemblyLine.Job
 
   @executor Application.get_env(:assembly_line, :job_executor)
   @check_interval Application.get_env(:assembly_line, :check_interval) || 1000
@@ -74,10 +75,11 @@ defmodule AssemblyLine.JobQueue.Handler do
     end)
   end
 
-  defp update_task_map(nil, task_map, _queue), do: task_map
-  defp update_task_map({t, {:ok, _response}}, task_map, queue) do
+  defp update_task_map({_t, nil}, task_map, _queue), do: task_map
+  defp update_task_map({t, {:ok, response}}, task_map, queue) do
     task_map
     |> Map.get(t)
+    |> Job.set_result(response)
     |> Server.complete_job(queue)
 
     task_map
