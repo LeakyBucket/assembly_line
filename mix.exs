@@ -7,6 +7,8 @@ defmodule AssemblyLine.Mixfile do
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     test_coverage: [tool: ExCoveralls],
+     preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test, "coveralls.post": :test],
      deps: deps]
   end
 
@@ -29,6 +31,7 @@ defmodule AssemblyLine.Mixfile do
   defp deps do
     [{:credo, "~> 0.3", only: [:dev, :test]},
      {:earmark, "~> 0.1", only: :dev},
-     {:ex_doc, "~> 0.11", only: :dev}]
+     {:ex_doc, "~> 0.11", only: :dev},
+     {:excoveralls, "~> 0.5.2", only: :test}]
   end
 end
