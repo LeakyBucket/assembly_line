@@ -25,13 +25,12 @@ defmodule AssemblyLine.JobQueue.Handler do
 
   Returns `:finished` if the entire pipeline completes successfuly.  Otherwise
   it returns `{:incomplete, [%AssemblyLine.Job{}]}` where the second part of
-  the tuple is a list of `AssemblyLine.JobQueue.Job` structs which failed to
-  process.
+  the tuple is a list of `AssemblyLine.Job` structs which failed to process.
   """
   def process(_queue, []), do: :finished
-  def process(queue, _jobs) do
+  def process(queue, jobs) do
     queue
-    |> process_set(Server.next_for(queue))
+    |> process_set(jobs)
     |> case do
       {:incomplete, []} ->
         Server.complete_current_set(queue)
@@ -41,13 +40,7 @@ defmodule AssemblyLine.JobQueue.Handler do
     end
   end
 
-  @doc """
-  Processes a set of jobs asynchronously and monitors their status.
-
-  Returns `{:incomplete, [] | [%AssemblyLine.Job{}]}` where the second tuple
-  element is a list of jobs that failed.
-  """
-  def process_set(queue, jobs) do
+  defp process_set(queue, jobs) do
     jobs
     |> start_jobs
     |> monitor(queue)
