@@ -40,7 +40,13 @@ defmodule AssemblyLine.JobQueue.Handler do
     end
   end
 
-  defp process_set(queue, jobs) do
+  @doc """
+  Processes a set of n jobs.
+
+  Returns `{:incomplete, list}` where `list` is a list of jobs that failed, the
+  `list` can be empty.
+  """
+  def process_set(queue, jobs) do
     jobs
     |> start_jobs
     |> monitor(queue)
