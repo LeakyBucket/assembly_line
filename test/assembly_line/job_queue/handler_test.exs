@@ -29,4 +29,12 @@ defmodule AssemblyLine.JobQueue.HandlerTest do
 
     assert {:incomplete, [:c]} = Handler.process_set(@bad_individual_server, [:c])
   end
+
+  test "running a full queue without error" do
+    assert :finished = Handler.start_all @happy_server
+  end
+
+  test "running a full queue with errors" do
+    assert {:incomplete, [:c]} = Handler.start_all @bad_set_server
+  end
 end

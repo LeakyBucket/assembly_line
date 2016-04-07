@@ -33,6 +33,7 @@ defmodule AssemblyLine.JobQueue.Handler do
     |> process_set(Server.next_for(queue))
     |> case do
       {:incomplete, []} ->
+        Server.complete_current_set(queue)
         process(queue, Server.next_for(queue))
       {:incomplete, failed} ->
         {:incomplete, failed}
