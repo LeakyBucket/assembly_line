@@ -7,6 +7,8 @@ defmodule AssemblyLine.JobQueue.Server do
   tracking.
   """
 
+  alias AssemblyLine.Job
+
   defstruct work: [], finished: MapSet.new([])
 
   @doc """
@@ -114,9 +116,10 @@ defmodule AssemblyLine.JobQueue.Server do
   `finished` set outside the scope of the `complete_current_set/1` function.
   """
   def finish_job(%__MODULE__{work: [current | rest], finished: finished}, task) do
+    %Job{task: identifier, args: args} = task
     new_current = current
                   |> List.wrap
-                  |> List.delete(task)
+                  |> List.delete(%Job{task: identifier, args: args, result: nil})
 
     %__MODULE__{work: [new_current | rest], finished: MapSet.union(finished, to_set(task))}
   end
