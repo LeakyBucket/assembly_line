@@ -14,9 +14,24 @@ defmodule AssemblyLine.JobQueue.ServerTest do
     assert [:a, :b] = Server.next_for @name
   end
 
+  test "getting next task when empty" do
+    Server.complete_current_set @name
+    Server.complete_current_set @name
+
+    assert [] = Server.next_for @name
+  end
+
   test "completing the current task set" do
     Server.complete_current_set @name
     expected = MapSet.new([:a, :b])
+
+    assert ^expected = Server.get_completed @name
+  end
+
+  test "completing the current set when it is a singleton" do
+    Server.complete_current_set @name
+    Server.complete_current_set @name
+    expected = MapSet.new([:a, :b, :c])
 
     assert ^expected = Server.get_completed @name
   end
@@ -25,12 +40,18 @@ defmodule AssemblyLine.JobQueue.ServerTest do
     assert %MapSet{} = Server.get_completed @name
   end
 
-  test "completing a single task" do
+  test "completing a single task from a set" do
     Server.complete_job :a, @name
     expected = MapSet.new([:a])
 
     assert ^expected = Server.get_completed @name
   end
 
-  #TODO: Need to test behavior when completing only job in a single job `set`
+  test "completing a singleton task" do
+    Server.complete_current_set @name
+    Server.complete_job :c, @name
+    expected = MapSet.new([:a, :b, :c])
+
+    assert ^expected = Server.get_completed @name
+  end
 end

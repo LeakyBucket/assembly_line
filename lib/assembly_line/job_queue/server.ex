@@ -43,9 +43,7 @@ defmodule AssemblyLine.JobQueue.Server do
   the list.
   """
   def next_for(name) do
-    Agent.get(name, fn %__MODULE__{work: [next | _rest]} ->
-      List.wrap next
-    end)
+    Agent.get(name, __MODULE__, :current_set, [])
   end
 
   @doc """
@@ -115,10 +113,22 @@ defmodule AssemblyLine.JobQueue.Server do
   This is a callback function for the `Agent` to use when adding tasks to the
   `finished` set outside the scope of the `complete_current_set/1` function.
   """
-  def finish_job(%__MODULE__{work: [current_set | rest], finished: finished}, task) do
-    new_current = List.delete(current_set, task)
+  def finish_job(%__MODULE__{work: [current | rest], finished: finished}, task) do
+    new_current = current
+                  |> List.wrap
+                  |> List.delete(task)
 
     %__MODULE__{work: [new_current | rest], finished: MapSet.union(finished, to_set(task))}
+  end
+
+  @doc """
+  Retrieves the current job set from the queue.
+
+  Returns the incomplete jobs from the current set in the Queue.
+  """
+  def current_set(%__MODULE__{work: []}), do: []
+  def current_set(%__MODULE__{work: [current | _rest]}) do
+    List.wrap current
   end
 
   @doc """
