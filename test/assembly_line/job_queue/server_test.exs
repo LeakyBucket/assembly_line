@@ -59,4 +59,10 @@ defmodule AssemblyLine.JobQueue.ServerTest do
 
     assert ^expected = Server.get_completed @name
   end
+
+  test "shutting down", %{agent: agent} do
+    Server.finished @name
+
+    refute Process.alive? agent
+  end
 end
