@@ -16,7 +16,7 @@ defmodule AssemblyLine.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger]]
+    [applications: [:logger, :gproc]]
   end
 
   # Dependencies can be Hex packages:
@@ -29,7 +29,8 @@ defmodule AssemblyLine.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:credo, "~> 0.3", only: [:dev, :test]},
+    [{:gproc, "~> 0.5.0"},
+     {:credo, "~> 0.3", only: [:dev, :test]},
      {:earmark, "~> 0.1", only: :dev},
      {:ex_doc, "~> 0.11", only: :dev},
      {:excoveralls, "~> 0.5.2", only: :test}]

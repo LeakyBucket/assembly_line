@@ -147,4 +147,8 @@ defmodule AssemblyLine.JobQueue.Server do
   def to_set(jobs) do
     MapSet.new [jobs]
   end
+
+  defp via_tuple(name) do
+    {:via, :gproc, {:n, :g, {:job_queue, name}}}
+  end
 end
