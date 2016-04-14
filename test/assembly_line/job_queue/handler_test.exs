@@ -4,9 +4,9 @@ defmodule AssemblyLine.JobQueue.HandlerTest do
   alias AssemblyLine.JobQueue.Server
   alias AssemblyLine.Job
 
-  @bad_set_server :bad_set
-  @happy_server :happy
-  @bad_individual_server :bad_seed
+  @bad_set_server "bad_set"
+  @happy_server "happy"
+  @bad_individual_server "bad_seed"
 
   setup do
     a = %Job{task: :a}

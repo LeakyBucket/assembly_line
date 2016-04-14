@@ -7,6 +7,7 @@ defmodule AssemblyLine.JobQueue.Server do
   tracking.
   """
 
+  use GenServer
   alias AssemblyLine.Job
 
   defstruct work: [], finished: MapSet.new([])
@@ -31,7 +32,49 @@ defmodule AssemblyLine.JobQueue.Server do
     ```
   """
   def start_link(name, work) do
-    Agent.start_link(fn -> %__MODULE__{work: work} end, name: name)
+    GenServer.start_link(__MODULE__, %__MODULE__{work: work}, name: via_tuple(name))
+  end
+
+  def handle_call(:next_set, _from, state) do
+    {:reply, current_set(state), state}
+  end
+
+  def handle_call(:get_completed, _from, state) do
+    {:reply, state.finished, state}
+  end
+
+  def handle_cast(:complete_current_set, state) do
+    %__MODULE__{work: [current | remaining], finished: finished} = state
+
+
+    {:noreply, %__MODULE__{work: remaining, finished: MapSet.union(finished, to_set(current))}}
+  end
+
+  def handle_cast({:complete, job}, state) do
+    {:noreply, complete(state, job)}
+  end
+
+  @doc """
+  Stops the JobQueue with `name`
+
+  It returns `:ok` if the JobQueue terminates normally otherwise it will exit.
+  """
+  def finished(name) do
+    name
+    |> via_tuple
+    |> GenServer.stop(:normal)
+  end
+
+  @doc """
+  Adds a specified job to the `finished` set
+
+  Returns an updated `Server` struct
+
+  This function is intended to be used when adding tasks to the `finished` set
+  outside the scope of the `complete_current_set/1` function.
+  """
+  def finish_job(job, queue) do
+    GenServer.cast(via_tuple(queue), {:complete, job})
   end
 
   @doc """
@@ -44,8 +87,8 @@ defmodule AssemblyLine.JobQueue.Server do
   set is finished via `complete_current_set/1` before it will be removed from
   the list.
   """
-  def next_for(name) do
-    Agent.get(name, __MODULE__, :current_set, [])
+  def next_set(queue) do
+    GenServer.call(via_tuple(queue), :next_set)
   end
 
   @doc """
@@ -58,10 +101,8 @@ defmodule AssemblyLine.JobQueue.Server do
   Tracking completed jobs can help prevent re-executing a sensitive job that is
   part of an incomplete job set.
   """
-  def get_completed(name) do
-    Agent.get(name, fn %__MODULE__{finished: completed} ->
-      completed
-    end)
+  def get_completed(queue) do
+    GenServer.call(via_tuple(queue), :get_completed)
   end
 
   @doc """
@@ -78,44 +119,11 @@ defmodule AssemblyLine.JobQueue.Server do
   This function should be called when all the jobs in a group have completed
   successfully.
   """
-  def complete_current_set(name) do
-    Agent.update(name, fn %__MODULE__{work: [current | remaining], finished: finished} ->
-      %__MODULE__{work: remaining, finished: MapSet.union(finished, __MODULE__.to_set(current))}
-    end)
+  def complete_current_set(queue) do
+    GenServer.cast(via_tuple(queue), :complete_current_set)
   end
 
-  @doc """
-  Adds a job to the `finished` set
-
-  Returns `:ok`
-
-  This function is intended to track the successful completion of a job in cases
-  where the entire job group didn't complete successfully.  This allows for a
-  comparison between the current job set and finished during a retry to avoid
-  re-running a potentially slow or dangerous job.
-  """
-  def complete_job(job, name) do
-    Agent.update(name, __MODULE__, :finish_job, [job])
-  end
-
-  @doc """
-  Stops the JobQueue with `name`
-
-  It returns `:ok` if the JobQueue terminates normally otherwise it will exit.
-  """
-  def finished(name) do
-    Agent.stop name
-  end
-
-  @doc """
-  Adds a specified job to the `finished` set
-
-  Returns an updated `Server` struct
-
-  This is a callback function for the `Agent` to use when adding tasks to the
-  `finished` set outside the scope of the `complete_current_set/1` function.
-  """
-  def finish_job(%__MODULE__{work: [current | rest], finished: finished}, task) do
+  defp complete(%__MODULE__{work: [current | rest], finished: finished}, task) do
     %Job{task: identifier, args: args} = task
     new_current = current
                   |> List.wrap
@@ -124,31 +132,21 @@ defmodule AssemblyLine.JobQueue.Server do
     %__MODULE__{work: [new_current | rest], finished: MapSet.union(finished, to_set(task))}
   end
 
-  @doc """
-  Retrieves the current job set from the queue.
-
-  Returns the incomplete jobs from the current set in the Queue.
-  """
-  def current_set(%__MODULE__{work: []}), do: []
-  def current_set(%__MODULE__{work: [current | _rest]}) do
+  defp current_set(%__MODULE__{work: []}), do: []
+  defp current_set(%__MODULE__{work: [current | _rest]}) do
     List.wrap current
   end
 
-  @doc """
-  Converts a single item or a list of items into a `MapSet`
-
-  Returns a `%MapSet{}`
-  """
-  def to_set(jobs) when is_list(jobs) do
+  defp to_set(jobs) when is_list(jobs) do
     Enum.reduce(jobs, MapSet.new([]), fn job, set ->
       MapSet.put set, job
     end)
   end
-  def to_set(jobs) do
+  defp to_set(jobs) do
     MapSet.new [jobs]
   end
 
   defp via_tuple(name) do
-    {:via, :gproc, {:n, :g, {:job_queue, name}}}
+    {:via, :gproc, {:n, :l, {:job_queue, name}}}
   end
 end

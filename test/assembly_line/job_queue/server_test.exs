@@ -4,7 +4,7 @@ defmodule AssemblyLine.JobQueue.ServerTest do
   alias AssemblyLine.JobQueue.Server
   alias AssemblyLine.Job
 
-  @name :server_test
+  @name "test_server"
 
   setup do
     a = %Job{task: :a}
@@ -16,14 +16,14 @@ defmodule AssemblyLine.JobQueue.ServerTest do
   end
 
   test "fetching the next task", %{a: a, b: b} do
-    assert [^a, ^b] = Server.next_for @name
+    assert [^a, ^b] = Server.next_set @name
   end
 
   test "getting next task when empty" do
     Server.complete_current_set @name
     Server.complete_current_set @name
 
-    assert [] = Server.next_for @name
+    assert [] = Server.next_set @name
   end
 
   test "completing the current task set", %{a: a, b: b} do
@@ -46,7 +46,7 @@ defmodule AssemblyLine.JobQueue.ServerTest do
   end
 
   test "completing a single task from a set", %{a: a} do
-    Server.complete_job a, @name
+    Server.finish_job a, @name
     expected = MapSet.new([a])
 
     assert ^expected = Server.get_completed @name
@@ -54,7 +54,7 @@ defmodule AssemblyLine.JobQueue.ServerTest do
 
   test "completing a singleton task", %{a: a, b: b, c: c} do
     Server.complete_current_set @name
-    Server.complete_job c, @name
+    Server.finish_job c, @name
     expected = MapSet.new([a, b, c])
 
     assert ^expected = Server.get_completed @name

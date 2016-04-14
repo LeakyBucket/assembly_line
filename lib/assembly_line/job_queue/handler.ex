@@ -17,7 +17,7 @@ defmodule AssemblyLine.JobQueue.Handler do
   """
   def start_all(queue) do
     queue
-    |> process(Server.next_for queue)
+    |> process(Server.next_set queue)
   end
 
   @doc """
@@ -34,7 +34,7 @@ defmodule AssemblyLine.JobQueue.Handler do
     |> case do
       {:incomplete, []} ->
         Server.complete_current_set(queue)
-        process(queue, Server.next_for(queue))
+        process(queue, Server.next_set(queue))
       {:incomplete, failed} ->
         {:incomplete, failed}
     end
@@ -58,7 +58,7 @@ defmodule AssemblyLine.JobQueue.Handler do
     end)
   end
 
-  defp monitor(task_map, queue) when map_size(task_map) == 0, do: {:incomplete, Server.next_for(queue)}
+  defp monitor(task_map, queue) when map_size(task_map) == 0, do: {:incomplete, Server.next_set(queue)}
   defp monitor(task_map, queue) do
     task_map
     |> Map.keys
@@ -79,7 +79,7 @@ defmodule AssemblyLine.JobQueue.Handler do
     task_map
     |> Map.get(t)
     |> Job.set_result(response)
-    |> Server.complete_job(queue)
+    |> Server.finish_job(queue)
 
     task_map
     |> Map.delete(t)
