@@ -1,13 +1,8 @@
 defmodule AssemblyLine do
   use Application
+  alias AssemblyLine.JobQueue.Supervisor
 
   def start(_type, _args) do
-    import Supervisor.Spec, warn: false
-
-    children = [
-      supervisor(AssemblyLine.JobQueue.Supervisor, [], restart: :permanent)
-    ]
-
-    supervise(children, strategy: :one_for_one)
+    Supervisor.start_link
   end
 end
