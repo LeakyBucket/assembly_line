@@ -1,4 +1,8 @@
 defmodule AssemblyLine do
+  @moduledoc """
+  The AssemblyLine Module defines the application structure.
+  """
+
   use Application
   alias AssemblyLine.JobQueue.Supervisor
 
