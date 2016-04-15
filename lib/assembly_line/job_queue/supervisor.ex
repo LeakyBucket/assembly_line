@@ -27,6 +27,7 @@ defmodule AssemblyLine.JobQueue.Supervisor do
 
   Returns `{:ok, pid}`
   """
+  @spec start_queue(String.t, list(AssemblyLine.Job.t)) :: {:ok, pid}
   def start_queue(name, work) do
     Supervisor.start_child(__MODULE__, [name, work])
   end
@@ -36,6 +37,7 @@ defmodule AssemblyLine.JobQueue.Supervisor do
 
   Returns `:ok`
   """
+  @spec stop_queue(String.t) :: :ok
   def stop_queue(name) do
     Server.finished(name)
   end

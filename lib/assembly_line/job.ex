@@ -22,6 +22,7 @@ defmodule AssemblyLine.Job do
   """
 
   defstruct task: nil, args: [], result: nil
+  @type t :: %AssemblyLine.Job{task: term, args: list, result: term}
 
   @doc """
   Sets the `result` attribute for a Job Struct.
@@ -36,6 +37,7 @@ defmodule AssemblyLine.Job do
     %AssemblyLine.Job{task: ZoneCreator, args: [{:add, cname_struct}], result: :ok}
     ```
   """
+  @spec set_result(AssemblyLine.Job.t, term) :: AssemblyLine.Job.t
   def set_result(job, result) do
     struct job, result: result
   end

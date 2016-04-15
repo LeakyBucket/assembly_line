@@ -4,55 +4,6 @@ defmodule AssemblyLine.JobQueue.Server do
 
   The Server both manages the Job Queues directly and provides an interface for
   interacting with the underlying Job Queues.
-
-  ## The Job Queue
-
-  The Queue is really just a single map with two attributes:
-
-  * `work`
-  * `finished`
-
-  ### The `work` attribute
-
-  Holds the remaining work for the queue as well as the order in which that
-  work may be performed.  At it's core the `work` is represented as a simple
-  list.
-
-  For example, lets say you have the following `DAG`.
-
-                          A               B
-                          |               |
-                          |               |
-                          ------> C <------
-                                  |
-                                  |
-                                  v
-                                  D
-
-  The nature of that structure could simply be reflected by the following list:
-   `[[a, b], c, d]`.  That is to say each element in the outermost list is a
-  requirement for the next element in the list.  If multiple nodes are
-  requirements of another node but not of each other then they can be grouped
-  together in their own list.
-
-  In order to process the above graph with `AssemblyLine` you simply need to
-  pass the following structure to `AssemblyLine.JobQueue.Supervisor.start_queue/2`.
-
-  ```
-  [
-    [
-      %Job{task: :a},
-      %Job{task: :b}
-    ],
-    %Job{task: :c},
-    %Job{task: d}
-  ]
-  ```
-
-  ### The `finished` attribute
-
-  This arrtibute holds a `MapSet` of all the jobs that have been completed for
-  the job queue.
   """
 
   use GenServer
@@ -79,6 +30,7 @@ defmodule AssemblyLine.JobQueue.Server do
       [[%AssemblyLine.Job{}, %AssemblyLine.Job{}], %AssemblyLine.Job{}]
     ```
   """
+  @spec start_link(String.t, list(AssemblyLine.Job.t)) :: {atom, pid}
   def start_link(name, work) do
     GenServer.start_link(__MODULE__, %__MODULE__{work: work}, name: via_tuple(name))
   end
@@ -107,6 +59,7 @@ defmodule AssemblyLine.JobQueue.Server do
 
   It returns `:ok` if the JobQueue terminates normally otherwise it will exit.
   """
+  @spec finished(String.t) :: atom
   def finished(name) do
     name
     |> via_tuple
@@ -121,6 +74,7 @@ defmodule AssemblyLine.JobQueue.Server do
   This function is intended to be used when adding tasks to the `finished` set
   outside the scope of the `complete_current_set/1` function.
   """
+  @spec finish_job(AssemblyLine.Job.t, String.t) :: atom
   def finish_job(job, queue) do
     GenServer.cast(via_tuple(queue), {:complete, job})
   end
@@ -135,6 +89,7 @@ defmodule AssemblyLine.JobQueue.Server do
   set is finished via `complete_current_set/1` before it will be removed from
   the list.
   """
+  @spec next_set(String.t) :: list(AssemblyLine.Job.t)
   def next_set(queue) do
     GenServer.call(via_tuple(queue), :next_set)
   end
@@ -149,6 +104,7 @@ defmodule AssemblyLine.JobQueue.Server do
   Tracking completed jobs can help prevent re-executing a sensitive job that is
   part of an incomplete job set.
   """
+  @spec get_completed(String.t) :: MapSet.t
   def get_completed(queue) do
     GenServer.call(via_tuple(queue), :get_completed)
   end
@@ -167,6 +123,7 @@ defmodule AssemblyLine.JobQueue.Server do
   This function should be called when all the jobs in a group have completed
   successfully.
   """
+  @spec complete_current_set(String.t) :: atom
   def complete_current_set(queue) do
     GenServer.cast(via_tuple(queue), :complete_current_set)
   end

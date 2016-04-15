@@ -15,6 +15,7 @@ defmodule AssemblyLine.JobQueue.Handler do
 
   Returns `:finished` or `:incomplete`.
   """
+  @spec start_all(String.t) :: :finished | :incomplete
   def start_all(queue) do
     queue
     |> process(Server.next_set queue)
@@ -27,6 +28,8 @@ defmodule AssemblyLine.JobQueue.Handler do
   it returns `{:incomplete, [%AssemblyLine.Job{}]}` where the second part of
   the tuple is a list of `AssemblyLine.Job` structs which failed to process.
   """
+  @spec process(String.t, list(AssemblyLine.Job.t)) :: {:incomplete, list(AssemblyLine.Job.t)} | :finished
+  def process(queue, jobs)
   def process(_queue, []), do: :finished
   def process(queue, jobs) do
     queue
@@ -46,6 +49,7 @@ defmodule AssemblyLine.JobQueue.Handler do
   Returns `{:incomplete, list}` where `list` is a list of jobs that failed, the
   `list` can be empty.
   """
+  @spec process_set(String.t, list(AssemblyLine.Job.t)) :: {:incomplete, list(AssemblyLine.Job.t)} | {:incomplete, []}
   def process_set(queue, jobs) do
     jobs
     |> start_jobs

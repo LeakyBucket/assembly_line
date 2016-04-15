@@ -4,12 +4,15 @@ defmodule AssemblyLine.Mixfile do
   def project do
     [app: :assembly_line,
      version: "0.4.0",
+     name: "Assembly Line",
+     source_url: "https://github.com/LeakyBucket/assembly_line",
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      test_coverage: [tool: ExCoveralls],
      preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test, "coveralls.post": :test],
-     deps: deps]
+     deps: deps,
+     docs: [main: AssemblyLine]]
   end
 
   # Configuration for the OTP application
