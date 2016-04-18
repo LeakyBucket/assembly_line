@@ -48,6 +48,33 @@ defmodule AssemblyLine do
 
   This arrtibute holds a `MapSet` of all the jobs that have been completed for
   the job queue.
+
+  ## The Handler
+
+  The `AssemblyLine.JobQueue.Handler` module simplifies processing the data in
+  a specific job queue.  The `Handler` is responsible for pulling work from the
+  queue and dispatching it to your worker modules for processing.
+
+  ### Handler Configuration
+
+  There are two application configuration values you can use to modify the
+  behavior of the `Handler`.
+
+  * `check_interval`
+  * `job_executor`
+
+  The `check_interval` determines how many miliseconds the `Handler` waits for
+  results from the workers.  If this value is not set then a default of `1000`
+  (1 second) will be used.
+
+  If this interval elapses before all the workers have replied the `Handler`
+  will proceed to update the job queue state for those jobs that have either
+  succeeded or failed to taht point.  It will then resume waiting, this loop
+  will continue until all jobs have succeeded or failed.
+
+  The `job_executor` provides an option for setting a default Module that should
+  process jobs.  The worker can be set on a per job basis as well so this value
+  is entirely optional.
   """
 
   use Application
