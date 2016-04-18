@@ -1,4 +1,14 @@
 defmodule AssemblyLine.JobQueue.HandlerTest do
+  defmodule CustomWorker do
+    alias AssemblyLine.Job
+
+    @behaviour AssemblyLine.Worker
+
+    def perform(%Job{} = _job) do
+      :custom_worker_finished
+    end
+  end
+
   use ExUnit.Case
   alias AssemblyLine.JobQueue.Handler
   alias AssemblyLine.JobQueue.Server
@@ -50,5 +60,13 @@ defmodule AssemblyLine.JobQueue.HandlerTest do
 
   test "running a full queue with errors", %{c: c} do
     assert {:incomplete, [^c]} = Handler.start_all @bad_set_server
+  end
+
+  @tag :custom_worker
+  test "It uses the specified worker" do
+    job = %Job{task: :a, worker: CustomWorker, args: []}
+
+    {:ok, _queue} = Server.start_link "custom worker", [job]
+    assert {:incomplete, []} = Handler.process_set "custom worker", [job]
   end
 end

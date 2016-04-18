@@ -129,10 +129,10 @@ defmodule AssemblyLine.JobQueue.Server do
   end
 
   defp complete(%__MODULE__{work: [current | rest], finished: finished}, task) do
-    %Job{task: identifier, args: args} = task
+    %Job{task: identifier, worker: worker, args: args} = task
     new_current = current
                   |> List.wrap
-                  |> List.delete(%Job{task: identifier, args: args, result: nil})
+                  |> List.delete(%Job{task: identifier, worker: worker, args: args, result: nil})
 
     %__MODULE__{work: [new_current | rest], finished: MapSet.union(finished, to_set(task))}
   end

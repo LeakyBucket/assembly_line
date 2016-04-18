@@ -7,7 +7,6 @@ defmodule AssemblyLine.JobQueue.Handler do
   alias AssemblyLine.JobQueue.Server
   alias AssemblyLine.Job
 
-  @executor Application.get_env(:assembly_line, :job_executor)
   @check_interval Application.get_env(:assembly_line, :check_interval) || 1000
 
   @doc """
@@ -58,9 +57,12 @@ defmodule AssemblyLine.JobQueue.Handler do
 
   defp start_jobs(jobs) do
     Enum.reduce(jobs, %{}, fn job, acc ->
-      Map.put acc, Task.async(@executor, :perform, [job]), job
+      Map.put acc, Task.async(worker_for(job), :perform, [job]), job
     end)
   end
+
+  defp worker_for(%Job{worker: nil}), do: Application.get_env(:assembly_line, :job_executor)
+  defp worker_for(job), do: job.worker
 
   defp monitor(task_map, queue) when map_size(task_map) == 0, do: {:incomplete, Server.next_set(queue)}
   defp monitor(task_map, queue) do

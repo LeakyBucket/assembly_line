@@ -8,6 +8,7 @@ defmodule AssemblyLine.Job do
   has the following attributes:
 
   * `task`
+  * `worker`
   * `args`
   * `result`
 
@@ -15,14 +16,18 @@ defmodule AssemblyLine.Job do
   for the work, that could be an Elixir Module or even another type of reference
   if the job is to be processed by another system/application.
 
+  The `worker` attribute holds the name of the module that should perform the
+  task.  The module specified here should implement the `AssemblyLine.Worker`
+  behaviour.
+
   The `args` attribute should be a list of arguments for the task reference.
   This list should contain the data needed for the job to be executed.
 
   The `result` attribute holds the outcome of the work.
   """
 
-  defstruct task: nil, args: [], result: nil
-  @type t :: %AssemblyLine.Job{task: term, args: list, result: term}
+  defstruct task: nil, worker: nil, args: [], result: nil
+  @type t :: %AssemblyLine.Job{task: term, worker: atom, args: list, result: term}
 
   @doc """
   Sets the `result` attribute for a Job Struct.
