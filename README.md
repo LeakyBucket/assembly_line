@@ -2,7 +2,7 @@
 
 ![Build](https://travis-ci.org/LeakyBucket/assembly_line.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/LeakyBucket/assembly_line/badge.svg?branch=master)](https://coveralls.io/github/LeakyBucket/assembly_line?branch=master)
-![hex](	https://img.shields.io/hexpm/v/assembly_line)
+[![Hex.pm](https://img.shields.io/hexpm/v/assembly_line.svg?maxAge=2592000)]()
 
 `AssemblyLine` makes handling complex job processing a painless process that will leave you wondering why you were worried about it in the first place.
 
