@@ -2,6 +2,53 @@ defmodule AssemblyLine.JobQueue.Handler do
   @moduledoc """
   Responsible for passing jobs from the queue to whatever the backend
   responsible for processing them.
+
+  The Handler consumes work from the specified queue and hands the job records
+  to the appropriate workers for processing.  In the case that the
+  `AssemblyLine.Job.t` struct doesn't specify a `worker` then the worker will
+  be pulled from the Application Envrionment.
+
+  ## Processing a Queue
+
+  Starting the processing of a queue is simple:
+
+  ```
+   alias AssemblyLine.JobQueue.Handler
+
+  Handler.start_all "the doc queue"
+  ```
+
+  `start_all/1` will execute until all jobs finish or a job exits abnormally.
+  It is important to note that the `Handler` functions __will not__ timeout.  They
+  will continue to wait on the worker until some form of response is received.
+  If you wish to implement a timeout your worker's `perform` function should
+  track that and `exit` after the time limit has been reached.
+
+  When a stage in the job queue has multiple jobs which can be executed in
+  parallel the `Handler` will keep track of the jobs which succeeded and the
+  jobs which failed.  All successful jobs are removed from the set in the
+  `AssemblyLine.JobQueue.Server`.  This means it is always safe to re-attempt
+  processing in the case of a partial completion.
+
+  ## Configuration
+
+  There are two configuration values which govern the behavior of the `Handler`:
+
+  * `check_interval`
+  * `job_executor`
+
+  The `check_interval` determines how many miliseconds the `Handler` waits for
+  results from the workers.  If this value is not set then a default of `1000`
+  (1 second) will be used.
+
+  If this interval elapses before all the workers have replied the `Handler`
+  will proceed to update the job queue state for those jobs that have either
+  succeeded or failed to taht point.  It will then resume waiting, this loop
+  will continue until all jobs have succeeded or failed.
+
+  The `job_executor` provides an option for setting a default Module that should
+  process jobs.  The worker can be set on a per job basis as well so this value
+  is entirely optional.
   """
 
   alias AssemblyLine.JobQueue.Server
@@ -55,6 +102,7 @@ defmodule AssemblyLine.JobQueue.Handler do
     |> monitor(queue)
   end
 
+  # TODO: Handle nil worker case elegantly.
   defp start_jobs(jobs) do
     Enum.reduce(jobs, %{}, fn job, acc ->
       Map.put acc, Task.async(worker_for(job), :perform, [job]), job

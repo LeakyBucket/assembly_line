@@ -4,6 +4,21 @@ defmodule AssemblyLine.JobQueue.Server do
 
   The Server both manages the Job Queues directly and provides an interface for
   interacting with the underlying Job Queues.
+
+  ## Starting a Queue
+
+  To start a new job queue you simply need to ask the `AssemblyLine.JobQueue.Supervisor`
+  to do so:
+
+  ```
+  alias AssemblyLine.JobQueue.Supervisor
+
+  Supervisor.start_queue "doc queue", []
+  ```
+
+  While it is always possible to interact directly with the `Server` it is
+  recommended that you use `AssemblyLine.JobQueue.Handler` to process the job
+  queue for you.
   """
 
   use GenServer
