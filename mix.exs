@@ -3,7 +3,7 @@ defmodule AssemblyLine.Mixfile do
 
   def project do
     [app: :assembly_line,
-     version: "0.4.0",
+     version: "0.5.0",
      name: "Assembly Line",
      source_url: "https://github.com/LeakyBucket/assembly_line",
      elixir: "~> 1.2",
