@@ -6,7 +6,7 @@
 
 `AssemblyLine` makes handling complex job processing a painless process that will leave you wondering why you were worried about it in the first place.
 
-[Installation](#installation)
+[Installation](#installation)  
 [Configuration](#configuration)  
 [Usage](#usage)  
 
