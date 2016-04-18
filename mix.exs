@@ -11,6 +11,8 @@ defmodule AssemblyLine.Mixfile do
      start_permanent: Mix.env == :prod,
      test_coverage: [tool: ExCoveralls],
      preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test, "coveralls.post": :test],
+     description: description,
+     package: package,
      deps: deps,
      docs: [main: AssemblyLine]]
   end
@@ -20,6 +22,20 @@ defmodule AssemblyLine.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     [applications: [:logger, :gproc]]
+  end
+
+  def package do
+    [
+      maintainers: ["Glen Holcomb"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/LeakyBucket/assembly_line"}
+    ]
+  end
+
+  def description do
+    """
+    A light-weight job queue (think DAG) manager.
+    """
   end
 
   # Dependencies can be Hex packages:
