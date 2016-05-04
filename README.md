@@ -29,9 +29,28 @@ In order to process the above graph with `AssemblyLine` you simply need to pass 
 ]
 ```
 
+But what if your graph is not so simple?  What if your graph isn't balanced?
+
+![](readme_stuffs/unbalanced_dag.png)
+
+You could represent the above graph with the following list:
+
+`[A, [B, C], D, E]`
+
+While that preserves the dependencies of all the nodes in the graph it isn't necessarily the most efficient way to process the `DAG`, if `A` is sufficiently slow then `C` is blocked for no real reason.
+
+In these cases we can flatten the graph using another `AssemblyLine.JobQueue.Server` process.  This means you have to create two _Server_ processes for one graph but it allows for a clean optimization of your work load.  In this case we would build the following `AssemblyLine.JobQueue.Server` processes:
+
+```
+{:ok, inner} = AssemblyLine.Supervisor.start_queue("inner", [A, B])
+{:ok, outer} = AssemblyLine.Supervisor.start_queue("outer", [[C, "inner"], D, E])
+```
+
+Whenever the _Server_ process encounters a string in the list it delegates down to that _Server_ process.
+
 ## Installation
 
-[Available in Hex](https://hex.pm/packages/assembly_line/0.5.0), the package can be installed as:
+[Available in Hex](https://hex.pm/packages/assembly_line/0.5.0), the package can be installed by:
 
   1. Add assembly_line to your list of dependencies in `mix.exs`:
 
@@ -132,7 +151,7 @@ iex> Handler.process :my_queue, [%Job{}, %Job{}]
 `struct` - holds information about the task, it's parameters and the outcome
 
 ```
-%Job{task: term, args: list, result: term}
+%Job{task: term, args: list, worker: term, result: term, queue: String.t}
 ```
 
 `set_result/2` - assigns a value to the result attribute
