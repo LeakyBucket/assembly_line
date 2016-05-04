@@ -79,6 +79,13 @@ defmodule AssemblyLine.JobQueue.HandlerTest do
     assert {:incomplete, []} = Handler.process_set "custom worker", [job]
   end
 
+  test "it uses the default worker" do
+    a = %Job{task: :a, args: []}
+    {:ok, _queue} = AssemblyLine.JobQueue.Server.start_link("default worker", [a])
+
+    assert :finished = Handler.start_all "default worker"
+  end
+
   test "processing a nested queue" do
     assert :finished = Handler.start_all @nested_name
   end
