@@ -50,12 +50,12 @@ Whenever the _Server_ process encounters a string in the list it delegates down 
 
 ## Installation
 
-[Available in Hex](https://hex.pm/packages/assembly_line/0.5.0), the package can be installed by:
+[Available in Hex](https://hex.pm/packages/assembly_line/1.0.0), the package can be installed by:
 
   1. Add assembly_line to your list of dependencies in `mix.exs`:
 
         def deps do
-          [{:assembly_line, "~> 0.5.0"}]
+          [{:assembly_line, "~> 1.0.0"}]
         end
 
   2. Ensure assembly_line is started before your application:
