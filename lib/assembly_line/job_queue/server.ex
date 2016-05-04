@@ -25,6 +25,7 @@ defmodule AssemblyLine.JobQueue.Server do
   alias AssemblyLine.Job
 
   defstruct work: [], finished: MapSet.new([])
+  @type t :: %AssemblyLine.JobQueue.Server{work: nonempty_list(AssemblyLine.Job.t | String.t | list(AssemblyLine.Job.t | String.t)), finished: MapSet.t}
 
   @doc """
   Starts a new job queue with the given name and task load
@@ -45,9 +46,9 @@ defmodule AssemblyLine.JobQueue.Server do
       [[%AssemblyLine.Job{}, %AssemblyLine.Job{}], %AssemblyLine.Job{}]
     ```
   """
-  @spec start_link(String.t, list(AssemblyLine.Job.t)) :: {atom, pid}
+  @spec start_link(String.t, nonempty_list(AssemblyLine.Job.t | String.t | list(AssemblyLine.Job.t | String.t))) :: {atom, pid}
   def start_link(name, work) do
-    GenServer.start_link(__MODULE__, %__MODULE__{work: work}, name: via_tuple(name))
+    GenServer.start_link(__MODULE__, %__MODULE__{work: tag_jobs(work, name)}, name: via_tuple(name))
   end
 
   def handle_call(:next_set, _from, state) do
@@ -65,8 +66,8 @@ defmodule AssemblyLine.JobQueue.Server do
     {:noreply, %__MODULE__{work: remaining, finished: MapSet.union(finished, to_set(current))}}
   end
 
-  def handle_cast({:complete, job}, state) do
-    {:noreply, complete(state, job)}
+  def handle_cast({:complete, job, result}, state) do
+    {:noreply, complete(state, job, result)}
   end
 
   @doc """
@@ -89,9 +90,9 @@ defmodule AssemblyLine.JobQueue.Server do
   This function is intended to be used when adding tasks to the `finished` set
   outside the scope of the `complete_current_set/1` function.
   """
-  @spec finish_job(AssemblyLine.Job.t, String.t) :: atom
-  def finish_job(job, queue) do
-    GenServer.cast(via_tuple(queue), {:complete, job})
+  @spec finish_job(AssemblyLine.Job.t, String.t, term) :: atom
+  def finish_job(job, queue, result) do
+    GenServer.cast(via_tuple(queue), {:complete, job, result})
   end
 
   @doc """
@@ -143,18 +144,79 @@ defmodule AssemblyLine.JobQueue.Server do
     GenServer.cast(via_tuple(queue), :complete_current_set)
   end
 
-  defp complete(%__MODULE__{work: [current | rest], finished: finished}, task) do
-    %Job{task: identifier, worker: worker, args: args} = task
-    new_current = current
-                  |> List.wrap
-                  |> List.delete(%Job{task: identifier, worker: worker, args: args, result: nil})
-
-    %__MODULE__{work: [new_current | rest], finished: MapSet.union(finished, to_set(task))}
+  defp tag_jobs(work, name) do
+    work
+    |> Enum.map(fn
+                  %Job{} = element ->
+                    Job.register_queue(element, name)
+                  element when is_list(element) ->
+                    tag_jobs(element, name)
+                  element ->
+                    element
+                end)
   end
+
+  defp complete(%__MODULE__{work: [current | rest], finished: finished}, task, result) do
+    current_set = List.wrap(current)
+
+    new_current = current_set
+                  |> locate_job(task)
+                  |> case do
+                    location when is_binary(location) ->
+                      location
+                      |> finish_nested(task, result)
+                      |> update_nested_set(current_set, location)
+                    _ ->
+                      finish_local(current_set, task)
+                  end
+
+    finished_task = Job.set_result(task, result)
+
+    %__MODULE__{work: update_current_work(new_current, rest), finished: MapSet.union(finished, to_set(finished_task))}
+  end
+
+  defp locate_job(current_set, job) do
+    current_set
+    |> Enum.find(nil, fn
+                        task when is_binary(task) ->
+                          # NOTE: Does this represent a potential race condition?
+                          locate_job(__MODULE__.next_set(task), job)
+                        task ->
+                          task == job
+                      end)
+  end
+
+  defp finish_local(set, job) do
+    List.delete(set, job)
+  end
+
+  defp finish_nested(queue, job, result) do
+    __MODULE__.finish_job(job, queue, result)
+
+    __MODULE__.next_set(queue)
+  end
+
+  defp update_nested_set([], current_set, location) do
+    __MODULE__.finished(location)
+
+    List.delete(current_set, location)
+  end
+  defp update_nested_set(_, current_set, _location), do: current_set
+
+  defp update_current_work([], rest), do: rest
+  defp update_current_work(current, rest), do: [current | rest]
 
   defp current_set(%__MODULE__{work: []}), do: []
   defp current_set(%__MODULE__{work: [current | _rest]}) do
-    List.wrap current
+    current
+    |> List.wrap
+    |> Enum.map(fn
+                  element when is_binary(element) ->
+                    next_set(element)
+                  element ->
+                    element
+                end)
+    |> List.flatten
   end
 
   defp to_set(jobs) when is_list(jobs) do

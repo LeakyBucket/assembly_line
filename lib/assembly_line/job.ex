@@ -11,6 +11,7 @@ defmodule AssemblyLine.Job do
   * `worker`
   * `args`
   * `result`
+  * `queue`
 
   The `task` attribute usually holds some kind of reference to the entry point
   for the work, that could be an Elixir Module or even another type of reference
@@ -24,10 +25,13 @@ defmodule AssemblyLine.Job do
   This list should contain the data needed for the job to be executed.
 
   The `result` attribute holds the outcome of the work.
+
+  The `queue` attribute is set by the `AssemblyLine.JobQueue.Server` and allows
+  for proper job tracking with nested complex graphs (nesting).
   """
 
-  defstruct task: nil, worker: nil, args: [], result: nil
-  @type t :: %AssemblyLine.Job{task: term, worker: atom, args: list, result: term}
+  defstruct [task: nil, worker: nil, args: [], result: nil, queue: nil]
+  @type t :: %AssemblyLine.Job{task: term, worker: atom, args: list, result: term, queue: String.t}
 
   @doc """
   Sets the `result` attribute for a Job Struct.
@@ -45,5 +49,24 @@ defmodule AssemblyLine.Job do
   @spec set_result(AssemblyLine.Job.t, term) :: AssemblyLine.Job.t
   def set_result(job, result) do
     struct job, result: result
+  end
+
+
+  @doc """
+  Sets the `queue` attribute for the given Job Struct.
+
+  Returns a Job Struct with the `queue` attribute set.
+
+  ## Examples
+
+    ```
+    iex> job = %AssemblyLine.Job{task: ZoneCreator, args: [{:add, cname_struct}]}
+    iex> AssemblyLine.Job.set_queue(job, "dns_pipeline")
+    %AssemblyLine.Job{task: ZoneCreator, args: [{:add, cname_struct}], result: nil, queue: "dns_pipeline"}
+    ```
+  """
+  @spec register_queue(AssemblyLine.Job.t, String.t) :: AssemblyLine.Job.t
+  def register_queue(job, queue) do
+    struct job, queue: queue
   end
 end
