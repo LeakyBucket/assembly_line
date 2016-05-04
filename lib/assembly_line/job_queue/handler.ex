@@ -56,6 +56,8 @@ defmodule AssemblyLine.JobQueue.Handler do
 
   @check_interval Application.get_env(:assembly_line, :check_interval) || 1000
 
+  defstruct [task_map: nil, failed: []]
+
   @doc """
   Starts job processing for the `queue`.
 
@@ -82,7 +84,6 @@ defmodule AssemblyLine.JobQueue.Handler do
     |> process_set(jobs)
     |> case do
       {:incomplete, []} ->
-        Server.complete_current_set(queue)
         process(queue, Server.next_set(queue))
       {:incomplete, failed} ->
         {:incomplete, failed}
@@ -104,42 +105,43 @@ defmodule AssemblyLine.JobQueue.Handler do
 
   # TODO: Handle nil worker case elegantly.
   defp start_jobs(jobs) do
-    Enum.reduce(jobs, %{}, fn job, acc ->
-      Map.put acc, Task.async(worker_for(job), :perform, [job]), job
-    end)
+    tasks = Enum.reduce(jobs, %{}, fn job, acc ->
+              Map.put acc, Task.async(worker_for(job), :perform, [job]), job
+            end)
+
+    %__MODULE__{task_map: tasks}
   end
 
   defp worker_for(%Job{worker: nil}), do: Application.get_env(:assembly_line, :job_executor)
   defp worker_for(job), do: job.worker
 
-  defp monitor(task_map, queue) when map_size(task_map) == 0, do: {:incomplete, Server.next_set(queue)}
-  defp monitor(task_map, queue) do
-    task_map
+  defp monitor(%__MODULE__{task_map: map, failed: fails}, _queue) when map_size(map) == 0, do: {:incomplete, fails}
+  defp monitor(work, queue) do
+    work.task_map
     |> Map.keys
     |> Task.yield_many(@check_interval)
-    |> process_results(task_map, queue)
+    |> process_results(work, queue)
     |> monitor(queue)
   end
 
-  defp process_results(task_list, task_map, queue) do
+  defp process_results(task_list, work, queue) do
     task_list
-    |> Enum.reduce(task_map, fn task, map ->
+    |> Enum.reduce(work, fn task, map ->
       update_task_map(task, map, queue)
     end)
   end
 
   defp update_task_map({_t, nil}, task_map, _queue), do: task_map
-  defp update_task_map({t, {:ok, response}}, task_map, queue) do
-    task_map
+  defp update_task_map({t, {:ok, response}}, work, queue) do
+    work.task_map
     |> Map.get(t)
-    |> Job.set_result(response)
-    |> Server.finish_job(queue)
+    |> Server.finish_job(queue, response)
 
-    task_map
-    |> Map.delete(t)
+    struct work, task_map: Map.delete(work.task_map, t)
   end
-  defp update_task_map({t, {:exit, _reason}}, task_map, _queue) do
-    task_map
-    |> Map.delete(t)
+  defp update_task_map({t, {:exit, _reason}}, map, _queue) do
+    map
+    |> struct(task_map: Map.delete(map.task_map, t))
+    |> struct(failed: [Map.get(map.task_map, t)] ++ map.failed)
   end
 end
