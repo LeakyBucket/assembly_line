@@ -44,6 +44,45 @@ defmodule AssemblyLine do
   ]
   ```
 
+  The `AssemblyLine.JobQueue.Server` process can manage more complex graphs as
+  well, take the following example:
+
+  ```
+                                        A
+                                        |
+                                        |
+                                        v
+                        C               B
+                        |               |
+                        |               |
+                        ------> D <------
+                                |
+                                |
+                                v
+                                E
+  ```
+
+  You could represent the above graph with the following list:
+
+  `[A, [B, C], D, E]`
+
+  While that preserves the dependencies of all the nodes in the graph it isn't
+  necessarily the most efficient way to process the `DAG`, if `A` is sufficiently
+  slow then `C` is blocked for no real reason.
+
+  In these cases we can flatten the graph using another `AssemblyLine.JobQueue.Server`
+  process.  This means you have to create two `Server` processes for one graph
+  but it allows for a clean optimization of your work load.  In this case we would
+  build the following `AssemblyLine.JobQueue.Server` processes:
+
+  ```
+  {:ok, inner} = AssemblyLine.Supervisor.start_queue("inner", [A, B])
+  {:ok, outer} = AssemblyLine.Supervisor.start_queue("outer", [[C, "inner"], D, E])
+  ```
+
+  Whenever the _Server_ process encounters a string in the list it delegates down
+  to that _Server_ process.
+
   ### The `finished` attribute
 
   This arrtibute holds a `MapSet` of all the jobs that have been completed for
