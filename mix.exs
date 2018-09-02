@@ -54,6 +54,6 @@ defmodule AssemblyLine.Mixfile do
      {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false},
      {:earmark, "~> 0.1", only: :dev},
      {:ex_doc, "~> 0.11", only: :dev},
-     {:excoveralls, "~> 0.5.2", only: :test}]
+     {:excoveralls, ">= 0.0.0", only: :test}]
   end
 end
