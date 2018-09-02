@@ -50,10 +50,9 @@ defmodule AssemblyLine.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [{:gproc, "~> 0.5.0"},
-     {:credo, ">= 0.7.4", only: [:dev, :test], runtime: false},
+     {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
      {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false},
-     {:earmark, "~> 0.1", only: :dev},
-     {:ex_doc, "~> 0.11", only: :dev},
+     {:ex_doc, ">= 0.0.0", only: :dev},
      {:excoveralls, ">= 0.0.0", only: :test}]
   end
 end
