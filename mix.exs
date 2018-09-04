@@ -10,10 +10,11 @@ defmodule AssemblyLine.Mixfile do
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      test_coverage: [tool: ExCoveralls],
-     preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test, "coveralls.post": :test],
-     description: description,
-     package: package,
-     deps: deps,
+     plt_add_apps: [:gproc],
+     preferred_cli_env: [coveralls: :test, "coveralls.detail": :test, "coveralls.post": :test],
+     description: description(),
+     package: package(),
+     deps: deps(),
      docs: [main: AssemblyLine]]
   end
 
@@ -49,9 +50,9 @@ defmodule AssemblyLine.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [{:gproc, "~> 0.5.0"},
-     {:credo, "~> 0.3", only: [:dev, :test]},
-     {:earmark, "~> 0.1", only: :dev},
-     {:ex_doc, "~> 0.11", only: :dev},
-     {:excoveralls, "~> 0.5.2", only: :test}]
+     {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
+     {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false},
+     {:ex_doc, ">= 0.0.0", only: :dev},
+     {:excoveralls, ">= 0.0.0", only: :test}]
   end
 end

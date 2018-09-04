@@ -51,6 +51,11 @@ defmodule AssemblyLine.JobQueue.Server do
     GenServer.start_link(__MODULE__, %__MODULE__{work: tag_jobs(work, name)}, name: via_tuple(name))
   end
 
+  @spec init(any()) :: {:ok, any()}
+  def init(args) do
+    {:ok, args}
+  end
+
   def handle_call(:next_set, _from, state) do
     {:reply, current_set(state), state}
   end
